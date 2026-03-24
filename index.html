@@ -494,11 +494,40 @@
                     <label>男性受众类型 *</label>
                     <select id="audienceType">
                         <option value="">请选择</option>
-                        <option value="25-35岁职场男性">25-35岁职场男性</option>
-                        <option value="30-45岁成熟男性">30-45岁成熟男性</option>
-                        <option value="18-25岁年轻男性">18-25岁年轻男性</option>
-                        <option value="35-50岁中年男性">35-50岁中年男性</option>
-                        <option value="全年龄段男性">全年龄段男性</option>
+                        
+                        <!-- 全男性 -->
+                        <optgroup label="🎯 全男性">
+                            <option value="全年龄段男性">全年龄段男性（18-50岁）</option>
+                            <option value="全男性观众">全男性观众（含中老年）</option>
+                        </optgroup>
+                        
+                        <!-- 年龄细分 -->
+                        <optgroup label="👨 年龄细分">
+                            <option value="18-25岁年轻男性">18-25岁年轻男性（Z世代、学生党）</option>
+                            <option value="25-35岁职场男性">25-35岁职场男性（都市精英、打工人）</option>
+                            <option value="30-45岁成熟男性">30-45岁成熟男性（事业有成、家庭稳定）</option>
+                            <option value="35-50岁中年男性">35-50岁中年男性（社会中坚、高消费力）</option>
+                            <option value="少年观众">少年观众（14-18岁）</option>
+                        </optgroup>
+                        
+                        <!-- 圈层/兴趣 -->
+                        <optgroup label="🎮 圈层/兴趣">
+                            <option value="游戏玩家">游戏玩家（硬核玩家、主机党）</option>
+                            <option value="军事迷">军事迷（军事历史爱好者）</option>
+                            <option value="理工男">理工男（科技、逻辑思维）</option>
+                            <option value="格斗/动作粉">格斗/动作粉（功夫片爱好者）</option>
+                            <option value="商战/谍战粉">商战/谍战粉（权谋、智斗）</option>
+                            <option value="悬疑推理粉">悬疑推理粉（烧脑剧爱好者）</option>
+                            <option value="二次元宅男">二次元宅男（动漫、番剧）</option>
+                        </optgroup>
+                        
+                        <!-- 社会身份 -->
+                        <optgroup label="💼 社会身份">
+                            <option value="职场精英">职场精英（白领、管理层）</option>
+                            <option value="创业者">创业者（老板、自由职业者）</option>
+                            <option value="蓝领工人">蓝领工人（建筑、制造业等）</option>
+                            <option value="体制内人员">体制内人员（公务员、事业编）</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="form-group">
