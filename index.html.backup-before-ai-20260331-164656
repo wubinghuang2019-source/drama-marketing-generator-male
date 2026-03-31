@@ -920,8 +920,6 @@
         }
 
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1236,7 +1234,6 @@
             <div class="action-buttons">
                 <button class="action-btn btn-primary" onclick="copyToClipboard()">📋 复制方案</button>
                 <button class="action-btn btn-secondary" onclick="downloadMarkdown()">📥 下载MD</button>
-                <button class="action-btn btn-secondary" onclick="exportWord()">📄 下载Word</button>
                 <button class="action-btn btn-secondary" onclick="window.print()">🖨️ 打印</button>
                 <button class="action-btn btn-secondary" onclick="location.reload()">🔄 重新生成</button>
             </div>
@@ -1403,10 +1400,8 @@
             }
 
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('resultSection').style.display = 'block';
-            document.getElementById('resultContent').innerHTML = '<p style="color:#00ff88;">🚀 AI 正在生成方案，请稍候...</p>';
+            document.getElementById('resultSection').style.display = 'none';
             document.querySelector('.generate-btn').disabled = true;
-            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
 
             try {
                 // 智能检测后端地址
@@ -1414,386 +1409,33 @@
                     ? 'http://localhost:3000'
                     : (window.BACKEND_URL || 'https://drama-marketing-api.onrender.com');
 
-                // 调用AI后端生成男性向营销方案(流式)
-                const response = await fetch(`${API_BASE_URL}/api/generate-marketing-plan`, {
+                // 调用AI后端生成男性向营销方案
+                const response = await fetch(`${API_BASE_URL}/api/generate-male-drama-marketing`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        dramaInfo: {
-                            dramaName: plan.dramaName,
-                            dramaType: plan.dramaType,
-                            platform: plan.platform,
-                            budget: plan.budget,
-                            audience: plan.audienceType,
-                            stage: plan.stage,
-                            coreSelling: plan.coreSelling,
-                            plotSummary: plan.plotSummary,
-                            emotionCore: plan.hardcore,
-                            targetEmotion: '硬核爽感',
-                            actors: '实力派演员',
-                            uniquePoint: plan.hotTopic || '男性向内容'
-                        },
-                        planType: 'male'
-                    })
+                    body: JSON.stringify(plan)
                 });
 
                 if (!response.ok) {
                     throw new Error('后端服务暂时不可用，请稍后重试');
                 }
 
-                // 流式读取
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullContent = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-
-                    for (let line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') continue;
-                            
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.content) {
-                                    fullContent += parsed.content;
-                                    // 实时渲染
-                                    if (typeof marked !== 'undefined') {
-                                        document.getElementById('resultContent').innerHTML = marked.parse(fullContent);
-                                    } else {
-                                        document.getElementById('resultContent').textContent = fullContent;
-                                    }
-                                }
-                            } catch (e) {
-                                // 忽略解析错误
-                            }
-                        }
-                    }
-                }
-
-                // 保存到全局变量
-                window.currentPlan = {
-                    ...plan,
-                    timestamp: new Date().toLocaleString('zh-CN'),
-                    aiResult: fullContent
-                };
-                window.currentMarkdown = fullContent;
-
-                // 添加版块控制按钮
-                addSectionControls();
-
+                const data = await response.json();
+                
+                // 显示AI生成的结果
+                displayResult(data.result);
                 document.getElementById('loading').style.display = 'none';
                 document.querySelector('.generate-btn').disabled = false;
-                
+                document.getElementById('resultSection').style.display = 'block';
+                document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('生成失败：', error);
-                document.getElementById('resultContent').innerHTML = `<p style="color:#ff006e;">❌ 生成失败：${error.message}</p>`;
+                alert('生成失败：' + error.message + '\n\n请确保后端服务正在运行');
                 document.getElementById('loading').style.display = 'none';
                 document.querySelector('.generate-btn').disabled = false;
             }
-        }
-
-        // 添加版块控制按钮
-        function addSectionControls() {
-            const h2Elements = document.querySelectorAll('#resultContent h2');
-            
-            h2Elements.forEach((h2, index) => {
-                if (h2.querySelector('.section-control-btn')) return;
-                
-                const sectionId = `section-${index}`;
-                h2.setAttribute('data-section-id', sectionId);
-                h2.style.display = 'flex';
-                h2.style.justifyContent = 'space-between';
-                h2.style.alignItems = 'center';
-                
-                const controlsDiv = document.createElement('div');
-                controlsDiv.style.cssText = 'display: flex; gap: 8px; font-size: 14px;';
-                
-                const editBtn = document.createElement('button');
-                editBtn.innerHTML = '✏️ 编辑';
-                editBtn.className = 'section-control-btn';
-                editBtn.style.cssText = 'padding:4px 10px;font-size:12px;border:1px solid #00d9ff;background:rgba(0,217,255,0.1);color:#00d9ff;border-radius:4px;cursor:pointer;';
-                editBtn.onclick = () => editSection(sectionId, h2);
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '🗑️ 删除';
-                deleteBtn.className = 'section-control-btn';
-                deleteBtn.style.cssText = 'padding:4px 10px;font-size:12px;border:1px solid #ff006e;background:rgba(255,0,110,0.1);color:#ff006e;border-radius:4px;cursor:pointer;';
-                deleteBtn.onclick = () => deleteSection(sectionId, h2);
-                
-                controlsDiv.appendChild(editBtn);
-                controlsDiv.appendChild(deleteBtn);
-                h2.appendChild(controlsDiv);
-            });
-        }
-
-        // 编辑章节
-        function editSection(sectionId, h2Element) {
-            const sectionTitle = h2Element.childNodes[0]?.textContent?.trim() || h2Element.textContent.split('\n')[0];
-            
-            const sectionElements = [];
-            let currentElement = h2Element.nextElementSibling;
-            while (currentElement && currentElement.tagName !== 'H2') {
-                sectionElements.push(currentElement);
-                currentElement = currentElement.nextElementSibling;
-            }
-            
-            let markdownContent = `## ${sectionTitle}\n\n`;
-            sectionElements.forEach(el => {
-                markdownContent += el.innerText + '\n\n';
-            });
-            
-            const editContainer = document.createElement('div');
-            editContainer.setAttribute('data-editing-section', sectionId);
-            editContainer.style.cssText = 'background:rgba(0,217,255,0.1);padding:20px;border-radius:8px;border:2px dashed #00d9ff;margin:10px 0;';
-            editContainer.innerHTML = `
-                <h3 style="margin-top:0;color:#00ff88;">✏️ 编辑章节: ${sectionTitle}</h3>
-                <textarea id="edit-textarea-${sectionId}" style="width:100%;min-height:300px;padding:12px;background:#0a0e1a;color:#e8f4f8;border:1px solid #00d9ff;border-radius:4px;font-family:monospace;font-size:13px;line-height:1.6;">${markdownContent}</textarea>
-                <div style="margin-top:12px;display:flex;gap:8px;">
-                    <button onclick="saveSectionEdit('${sectionId}')" style="padding:8px 20px;background:#00ff88;color:#0a0e1a;border:none;border-radius:4px;cursor:pointer;font-weight:600;">💾 保存</button>
-                    <button onclick="cancelSectionEdit('${sectionId}')" style="padding:8px 20px;background:rgba(255,255,255,0.1);color:#e8f4f8;border:1px solid #666;border-radius:4px;cursor:pointer;">❌ 取消</button>
-                </div>
-            `;
-            
-            h2Element.insertAdjacentElement('afterend', editContainer);
-            h2Element.style.display = 'none';
-            sectionElements.forEach(el => el.style.display = 'none');
-            editContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        // 保存编辑
-        window.saveSectionEdit = function(sectionId) {
-            const textarea = document.getElementById(`edit-textarea-${sectionId}`);
-            const newMarkdown = textarea.value;
-            const editContainer = document.querySelector(`[data-editing-section="${sectionId}"]`);
-            const h2 = document.querySelector(`[data-section-id="${sectionId}"]`);
-            
-            const newHTML = marked.parse(newMarkdown);
-            
-            let currentElement = h2.nextElementSibling;
-            while (currentElement && currentElement.tagName !== 'H2') {
-                const next = currentElement.nextElementSibling;
-                if (currentElement !== editContainer) {
-                    currentElement.remove();
-                }
-                currentElement = next;
-            }
-            
-            editContainer.insertAdjacentHTML('beforebegin', newHTML);
-            editContainer.remove();
-            h2.style.display = '';
-            
-            updateCurrentPlanFromDOM();
-            addSectionControls();
-            alert('✅ 章节已更新!');
-        };
-
-        // 取消编辑
-        window.cancelSectionEdit = function(sectionId) {
-            const editContainer = document.querySelector(`[data-editing-section="${sectionId}"]`);
-            const h2 = document.querySelector(`[data-section-id="${sectionId}"]`);
-            
-            h2.style.display = '';
-            
-            let currentElement = h2.nextElementSibling;
-            while (currentElement && currentElement.tagName !== 'H2') {
-                if (currentElement !== editContainer) {
-                    currentElement.style.display = '';
-                }
-                currentElement = currentElement.nextElementSibling;
-            }
-            
-            editContainer.remove();
-        };
-
-        // 删除章节
-        function deleteSection(sectionId, h2Element) {
-            const sectionTitle = h2Element.textContent.split('\n')[0].trim();
-            if (!confirm(`确定要删除章节"${sectionTitle}"吗？`)) {
-                return;
-            }
-            
-            let currentElement = h2Element.nextElementSibling;
-            while (currentElement && currentElement.tagName !== 'H2') {
-                const next = currentElement.nextElementSibling;
-                currentElement.remove();
-                currentElement = next;
-            }
-            h2Element.remove();
-            
-            updateCurrentPlanFromDOM();
-            alert('✅ 章节已删除!');
-        }
-
-        // 更新currentPlan从DOM
-        function updateCurrentPlanFromDOM() {
-            const resultDiv = document.getElementById('resultContent');
-            let markdown = '';
-            const elements = resultDiv.children;
-            
-            for (let el of elements) {
-                const tagName = el.tagName.toLowerCase();
-                const text = el.innerText.trim();
-                if (!text) continue;
-                
-                if (tagName === 'h2') {
-                    const titleText = el.childNodes[0]?.textContent?.trim() || text.split('\n')[0];
-                    markdown += `## ${titleText}\n\n`;
-                } else if (tagName === 'h3') {
-                    markdown += `### ${text}\n\n`;
-                } else if (tagName === 'ul') {
-                    const items = el.querySelectorAll('li');
-                    items.forEach(li => markdown += `- ${li.innerText.trim()}\n`);
-                    markdown += '\n';
-                } else if (tagName === 'p') {
-                    markdown += `${text}\n\n`;
-                }
-            }
-            
-            if (window.currentPlan) {
-                window.currentPlan.aiResult = markdown.trim();
-                window.currentMarkdown = markdown.trim();
-            }
-        }
-
-        // 导出Word
-        async function exportWord() {
-            const plan = window.currentPlan;
-            if (!plan || !plan.aiResult) {
-                alert('请先生成营销方案！');
-                return;
-            }
-
-            try {
-                const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, 
-                        Header, Footer, PageNumber, PageBreak } = docx;
-
-                const sections = parseMarkdownForWord(plan.aiResult);
-
-                const docChildren = [
-                    new Paragraph({
-                        heading: HeadingLevel.TITLE,
-                        children: [new TextRun({ text: "男性剧集营销方案", size: 56, bold: true, color: "00D9FF" })]
-                    }),
-                    new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: 120, after: 240 },
-                        children: [new TextRun({
-                            text: plan.dramaName || "剧集名称",
-                            size: 40,
-                            color: "B47EFF",
-                            bold: true
-                        })]
-                    }),
-                    new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 1200 },
-                        children: [new TextRun({
-                            text: plan.timestamp || new Date().toLocaleString('zh-CN'),
-                            size: 20,
-                            color: "999999"
-                        })]
-                    }),
-                    new Paragraph({ children: [new PageBreak()] })
-                ];
-
-                sections.forEach((section, index) => {
-                    if (index > 0) docChildren.push(new Paragraph({ children: [new PageBreak()] }));
-                    docChildren.push(new Paragraph({
-                        heading: HeadingLevel.HEADING_1,
-                        children: [new TextRun({ text: section.title, size: 36, bold: true, color: "00D9FF" })]
-                    }));
-
-                    section.content.forEach(line => {
-                        if (!line.trim()) return;
-                        if (line.startsWith('### ')) {
-                            docChildren.push(new Paragraph({
-                                heading: HeadingLevel.HEADING_2,
-                                children: [new TextRun({ text: line.replace(/^###\s*/, ''), size: 28, bold: true, color: "00FF88" })]
-                            }));
-                        } else if (line.match(/^[-*•]\s/)) {
-                            docChildren.push(new Paragraph({
-                                bullet: { level: 0 },
-                                children: [new TextRun(line.replace(/^[-*•]\s/, '').replace(/\*\*/g, ''))]
-                            }));
-                        } else {
-                            docChildren.push(new Paragraph({
-                                children: [new TextRun(line.replace(/\*\*/g, ''))]
-                            }));
-                        }
-                    });
-                });
-
-                const doc = new Document({
-                    sections: [{
-                        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
-                        headers: {
-                            default: new Header({
-                                children: [new Paragraph({
-                                    alignment: AlignmentType.RIGHT,
-                                    children: [new TextRun({ text: plan.dramaName || "剧集营销方案", size: 20, color: "999999" })]
-                                })]
-                            })
-                        },
-                        footers: {
-                            default: new Footer({
-                                children: [new Paragraph({
-                                    alignment: AlignmentType.CENTER,
-                                    children: [
-                                        new TextRun({ text: "第 ", size: 20, color: "999999" }),
-                                        new TextRun({ children: [PageNumber.CURRENT], size: 20, color: "999999" }),
-                                        new TextRun({ text: " 页", size: 20, color: "999999" })
-                                    ]
-                                })]
-                            })
-                        },
-                        children: docChildren
-                    }]
-                });
-
-                const blob = await Packer.toBlob(doc);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = (plan.dramaName || '剧集') + '_男性版营销方案.docx';
-                a.click();
-                URL.revokeObjectURL(url);
-
-                alert(`✅ Word文档已生成下载！\n\n• 包含 ${sections.length} 个章节`);
-
-            } catch (error) {
-                console.error('Word生成失败:', error);
-                alert('❌ Word生成失败: ' + error.message);
-            }
-        }
-
-        // 解析Markdown为Word结构
-        function parseMarkdownForWord(markdown) {
-            const sections = [];
-            const lines = markdown.split('\n');
-            let currentSection = null;
-
-            for (let line of lines) {
-                if (line.startsWith('## ')) {
-                    if (currentSection) sections.push(currentSection);
-                    currentSection = {
-                        title: line.replace(/^##\s*/, '').trim(),
-                        content: []
-                    };
-                } else if (currentSection && line.trim()) {
-                    currentSection.content.push(line);
-                }
-            }
-
-            if (currentSection) sections.push(currentSection);
-            return sections;
         }
 
         // 营销方案生成引擎（基于2025框架）
