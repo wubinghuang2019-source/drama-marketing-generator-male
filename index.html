@@ -1088,7 +1088,7 @@
             <div class="topic-tabs">
                 <div class="topic-tab active" data-source="weibo">微博热搜</div>
                 <div class="topic-tab" data-source="douyin">抖音热榜</div>
-                <div class="topic-tab" data-source="bilibili">B站热门</div>
+                <div class="topic-tab" data-source="xiaohongshu">小红书热门</div>
                 <div class="topic-tab" data-source="douban">豆瓣热议</div>
             </div>
             <div class="topic-list" id="topicList">
@@ -1251,92 +1251,114 @@
     <script>
         // 实时热点数据（真实API接入）
         const hotTopicsData = {
-            weibo: [], // 将从API实时加载
-            douyin: [
-                '狂飙名场面剪辑',
-                '谍战剧高燃混剪',
-                '军旅剧幕后揭秘',
-                '演员硬核训练日常',
-                '剧情解析爆款'
-            ],
-            bilibili: [
-                'UP主深度解析',
-                '剧情逻辑推理',
-                '专业军事顾问访谈',
-                '经典桥段对比',
-                '彩蛋隐藏细节'
-            ],
-            douban: [
-                '高分谍战剧推荐',
-                '剧情硬伤讨论',
-                '演技炸裂名场面',
-                '历史背景考据',
-                '豆瓣9分神剧'
-            ]
+            weibo: [], // 从后端API加载
+            douyin: [], // 从后端API加载
+            xiaohongshu: [], // 从后端API加载(原bilibili改为小红书)
+            douban: [] // 从后端API加载
         };
 
         // 初始化热点显示
         let currentHotSource = 'weibo';
         
-        // 加载真实微博热搜
-        async function loadWeiboHotSearch() {
+        // 加载所有平台实时热搜(从后端API)
+        async function loadAllHotspots() {
             try {
-                // 使用公开的热搜API
-                const response = await fetch('https://tenapi.cn/v2/weibohot', {
-                    method: 'GET'
+                console.log('🔄 开始加载实时热搜...');
+                const response = await fetch('https://drama-marketing-api.onrender.com/api/get-realtime-hotspots', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
-                const data = await response.json();
-                if (data.code === 200 && data.data) {
-                    hotTopicsData.weibo = data.data
-                        .slice(0, 15) // 取前15条
-                        .map((item, index) => ({
-                            title: item.title || item.word,
-                            hot: item.hot || item.num || 0,
-                            category: item.flag || '综合',
-                            rank: index + 1
-                        }));
-                    
-                    // 如果当前显示的是微博，刷新显示
-                    if (currentHotSource === 'weibo') {
-                        displayHotTopics('weibo');
-                    }
-                    
-                    console.log('✅ 微博热搜加载成功', hotTopicsData.weibo.length + '条');
-                    return true;
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
-                // 如果API失败，使用备用数据
-                throw new Error('API返回数据格式错误');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // 微博数据
+                    if (result.data.weibo && result.data.weibo.length > 0) {
+                        hotTopicsData.weibo = result.data.weibo;
+                        console.log('✅ 微博热搜加载成功', result.data.weibo.length + '条');
+                    }
+                    
+                    // 抖音数据
+                    if (result.data.douyin && result.data.douyin.length > 0) {
+                        hotTopicsData.douyin = result.data.douyin;
+                        console.log('✅ 抖音热榜加载成功', result.data.douyin.length + '条');
+                    }
+                    
+                    // 小红书数据
+                    if (result.data.xiaohongshu && result.data.xiaohongshu.length > 0) {
+                        hotTopicsData.xiaohongshu = result.data.xiaohongshu;
+                        console.log('✅ 小红书热门加载成功', result.data.xiaohongshu.length + '条');
+                    }
+                    
+                    // 豆瓣数据
+                    if (result.data.douban && result.data.douban.length > 0) {
+                        hotTopicsData.douban = result.data.douban;
+                        console.log('✅ 豆瓣热议加载成功', result.data.douban.length + '条');
+                    }
+                    
+                    // 刷新当前显示
+                    displayHotTopics(currentHotSource);
+                    
+                    return true;
+                } else {
+                    throw new Error('API返回数据格式错误');
+                }
                 
             } catch (error) {
-                console.warn('⚠️ 微博热搜API请求失败，使用备用数据', error);
-                // 备用静态数据
+                console.warn('⚠️ 热搜API请求失败，使用备用数据', error);
+                
+                // 备用数据 - 微博
                 hotTopicsData.weibo = [
                     { title: '男二以下 AI演员', hot: 1175864, category: '热', rank: 1 },
                     { title: '刘文祥麻辣烫店员徒手拌麻酱', hot: 855214, category: '新', rank: 2 },
                     { title: '春暖花开各地文旅持续升温', hot: 659766, category: '新', rank: 3 },
                     { title: '樊长玉谢征 好孕赘婿', hot: 523581, category: '新', rank: 4 },
-                    { title: '小米超强钢获得国家级科技一等奖', hot: 188865, category: '综合', rank: 5 },
-                    { title: '微信能折叠发图了', hot: 183891, category: '综合', rank: 6 },
-                    { title: '扫黑风暴续集官宣', hot: 0, category: '娱乐', rank: 7 },
-                    { title: '人民的名义导演新作', hot: 0, category: '娱乐', rank: 8 },
-                    { title: '硬核谍战剧开机', hot: 0, category: '娱乐', rank: 9 },
-                    { title: '实力派演员回归', hot: 0, category: '娱乐', rank: 10 }
+                    { title: '小米超强钢获得国家级科技一等奖', hot: 188865, category: '综合', rank: 5 }
                 ];
                 
-                if (currentHotSource === 'weibo') {
-                    displayHotTopics('weibo');
-                }
+                // 备用数据 - 抖音
+                hotTopicsData.douyin = [
+                    { title: '狂飙名场面剪辑', rank: 1 },
+                    { title: '谍战剧高燃混剪', rank: 2 },
+                    { title: '军旅剧幕后揭秘', rank: 3 },
+                    { title: '演员硬核训练日常', rank: 4 },
+                    { title: '剧情解析爆款', rank: 5 }
+                ];
+                
+                // 备用数据 - 小红书
+                hotTopicsData.xiaohongshu = [
+                    { title: '剧集种草攻略', rank: 1 },
+                    { title: '演员同款穿搭', rank: 2 },
+                    { title: '追剧必备好物', rank: 3 },
+                    { title: '剧情分析解读', rank: 4 },
+                    { title: '经典桥段盘点', rank: 5 }
+                ];
+                
+                // 备用数据 - 豆瓣
+                hotTopicsData.douban = [
+                    { title: '高分谍战剧推荐', rank: 1 },
+                    { title: '剧情硬伤讨论', rank: 2 },
+                    { title: '演技炸裂名场面', rank: 3 },
+                    { title: '历史背景考据', rank: 4 },
+                    { title: '豆瓣9分神剧', rank: 5 }
+                ];
+                
+                displayHotTopics(currentHotSource);
                 return false;
             }
         }
 
         // 页面加载时获取热搜
-        loadWeiboHotSearch();
+        loadAllHotspots();
         
         // 每5分钟自动刷新热搜
-        setInterval(loadWeiboHotSearch, 5 * 60 * 1000);
+        setInterval(loadAllHotspots, 5 * 60 * 1000);
 
         // 热点标签切换
         document.querySelectorAll('.topic-tab').forEach(tab => {
@@ -1351,8 +1373,13 @@
         function displayHotTopics(source) {
             const topics = hotTopicsData[source] || [];
             
-            // 如果是微博数据，显示热度值和标签
-            if (source === 'weibo' && topics.length > 0 && topics[0].title) {
+            if (topics.length === 0) {
+                document.getElementById('topicList').innerHTML = '<div class="topic-item">加载中...</div>';
+                return;
+            }
+            
+            // 微博数据 - 显示热度和标签
+            if (source === 'weibo' && topics[0] && typeof topics[0] === 'object' && topics[0].title) {
                 const html = topics.map((item, index) => {
                     const hotText = item.hot > 0 ? `<span style="color: #ef4444; font-size: 0.85em; margin-left: 8px;">${(item.hot / 10000).toFixed(1)}万</span>` : '';
                     const categoryBadge = item.category ? `<span style="background: #ef4444; color: white; font-size: 0.75em; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">${item.category}</span>` : '';
@@ -1361,15 +1388,27 @@
                         <span class="rank">#${item.rank || index + 1}</span> ${item.title} ${hotText} ${categoryBadge}
                     </div>`;
                 }).join('');
-                document.getElementById('topicList').innerHTML = html || '<div class="topic-item">暂无数据</div>';
-            } else {
-                // 其他平台显示简单格式
+                document.getElementById('topicList').innerHTML = html;
+            } 
+            // 抖音/小红书/豆瓣 - 对象格式
+            else if (topics[0] && typeof topics[0] === 'object' && topics[0].title) {
+                const html = topics.map((item, index) => {
+                    return `<div class="topic-item" onclick="selectHotTopic('${item.title.replace(/'/g, "\\'")}')">
+                        <span class="rank">#${item.rank || index + 1}</span> ${item.title}
+                    </div>`;
+                }).join('');
+                document.getElementById('topicList').innerHTML = html;
+            }
+            // 字符串数组格式(备用)
+            else if (typeof topics[0] === 'string') {
                 const html = topics.map((topic, index) => 
-                    `<div class="topic-item" onclick="selectHotTopic('${topic}')">
+                    `<div class="topic-item" onclick="selectHotTopic('${topic.replace(/'/g, "\\'")}')">
                         <span class="rank">#${index + 1}</span> ${topic}
                     </div>`
                 ).join('');
-                document.getElementById('topicList').innerHTML = html || '<div class="topic-item">暂无数据</div>';
+                document.getElementById('topicList').innerHTML = html;
+            } else {
+                document.getElementById('topicList').innerHTML = '<div class="topic-item">暂无数据</div>';
             }
         }
 
