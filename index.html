@@ -1122,10 +1122,6 @@
                         <option value="收官期">收官期（最后一周）</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>关联热点（可选）</label>
-                    <input type="text" id="hotTopic" placeholder="点击上方热点自动填充，或手动输入">
-                </div>
             </div>
 
             <button class="generate-btn" onclick="generatePlan()">🚀 生成专业营销方案</button>
@@ -1169,8 +1165,7 @@
                 hardcore: document.getElementById('hardcore').value,
                 platform: document.getElementById('platform').value,
                 budget: document.getElementById('budget').value,
-                stage: document.getElementById('stage').value,
-                hotTopic: document.getElementById('hotTopic').value.trim()
+                stage: document.getElementById('stage').value
             };
 
             // 验证必填项
@@ -1213,7 +1208,7 @@
                             emotionCore: plan.hardcore,
                             targetEmotion: '硬核爽感',
                             actors: '实力派演员',
-                            uniquePoint: plan.hotTopic || '男性向内容'
+                            uniquePoint: '男性向内容'
                         },
                         planType: 'male'
                     })
@@ -1598,7 +1593,6 @@
 - **主打平台：** ${plan.platform}
 - **营销预算：** ${plan.budget}
 - **当前阶段：** ${plan.stage}
-${plan.hotTopic ? `- **关联热点：** ${plan.hotTopic}\n` : ''}
 
 ---
 
@@ -1646,7 +1640,6 @@ ${plan.hotTopic ? `- **关联热点：** ${plan.hotTopic}\n` : ''}
 - 🔍 **行业对比分析**：与同类型经典剧对比（如《潜伏》《人民的名义》）
 - 📊 **专业评测聚合**：整理各平台专业影评人评价
 - 🎬 **同类型推荐榜单**：带动流量，建立品类认知
-${plan.hotTopic ? `- 🔥 **热点借势：** 结合"${plan.hotTopic}"话题，制造关联讨论\n` : ''}
 
 ### 3️⃣ Collaborate（创作者合作）
 **UP主/KOL合作矩阵**
